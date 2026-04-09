@@ -56,8 +56,9 @@ input:focus { border-color: #0080ff !important; box-shadow: 0 0 0 2px rgba(0,128
     background: linear-gradient(135deg, #0057b8, #0080ff) !important;
     color: #fff !important; border: none !important;
     border-radius: 9px !important; font-weight: 700 !important;
-    font-size: .95rem !important; padding: 10px 0 !important;
-    width: 100% !important; transition: opacity .2s !important;
+    font-size: 1.1rem !important; padding: 18px 0 !important;
+    width: 100% !important; min-height: 56px !important;
+    transition: opacity .2s !important;
 }
 .stButton > button:hover { opacity: .88 !important; }
 
@@ -180,7 +181,7 @@ if uploaded_file and api_key:
             c2.metric("Not found", not_found)
             c3.metric("Errors", errors)
 
-            st.dataframe(result_df, use_container_width=True)
+            st.dataframe(result_df, use_container_width=True, height=min(400, 60 + len(result_df) * 35))
 
             buf = io.StringIO()
             result_df.to_csv(buf, index=False)
