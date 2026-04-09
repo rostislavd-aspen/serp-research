@@ -22,7 +22,7 @@ h1 span { color: #0080ff; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1>SERP <span>Research</span></h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='color:#ffffff'>SERP <span style='color:#0080ff'>Research</span></h1>", unsafe_allow_html=True)
 st.divider()
 
 api_key = st.text_input("Serper API Key", type="password", placeholder="Enter your serper.dev API key")
@@ -40,6 +40,7 @@ if uploaded_file:
             use_container_width=True, hide_index=True,
             column_config={"#": st.column_config.NumberColumn(width="small"), "Domain": st.column_config.TextColumn(width="large")}
         )
+
     else:
         st.error("CSV must contain a 'Key' column.")
 
@@ -89,7 +90,7 @@ if uploaded_file and api_key:
                         results[idx] = {"Status": status_label, "Key": domain, "SERP_Query": query, "URL": ""}
                     else:
                         url = (data.get("organic") or [{}])[0].get("link", "")
-                        results[idx] = {"Status": "found" if url else "not_found", "Key": domain, "SERP_Query": query, "URL": url}
+                        results[idx] = {"Status": f"200 — {'OK' if url else 'Not Found'}", "Key": domain, "SERP_Query": query, "URL": url}
                 except Exception as e:
                     results[idx] = {"Status": str(e), "Key": domain, "SERP_Query": query, "URL": ""}
 
