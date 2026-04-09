@@ -16,80 +16,12 @@ st.set_page_config(page_title="SERP Research", page_icon="🔍", layout="centere
 
 st.markdown("""
 <style>
-/* Base */
-html, body, [class*="css"] { font-family: system-ui, sans-serif; }
-.stApp { background-color: #0a0f1e; color: #e8eaf0; }
-
-/* Sidebar & main bg */
-section[data-testid="stSidebar"] { background: #0d1426; }
-
-/* Title */
-h1 { color: #ffffff !important; font-weight: 800 !important; letter-spacing: -.02em !important; }
-
-/* Labels */
-label, .stTextInput label, .stSelectbox label, .stFileUploader label {
-    color: #7a8fb0 !important; font-size: .78rem !important;
-    font-weight: 700 !important; text-transform: uppercase; letter-spacing: .05em;
-}
-
-/* Inputs */
-input[type="text"], input[type="password"] {
-    background: #111827 !important; border: 1px solid #1e3a5f !important;
-    color: #e8eaf0 !important; border-radius: 8px !important;
-}
-input:focus { border-color: #0080ff !important; box-shadow: 0 0 0 2px rgba(0,128,255,.15) !important; }
-
-/* Select */
-.stSelectbox > div > div {
-    background: #111827 !important; border: 1px solid #1e3a5f !important;
-    color: #e8eaf0 !important; border-radius: 8px !important;
-}
-
-/* File uploader */
-[data-testid="stFileUploader"] {
-    background: #111827 !important; border: 2px dashed #1e3a5f !important;
-    border-radius: 10px !important;
-}
-
-/* Button */
-.stButton > button {
-    background: linear-gradient(135deg, #0057b8, #0080ff) !important;
-    color: #fff !important; border: none !important;
-    border-radius: 9px !important; font-weight: 700 !important;
-    font-size: 1.1rem !important; padding: 18px 0 !important;
-    width: 100% !important; min-height: 56px !important;
-    transition: opacity .2s !important;
-}
-.stButton > button:hover { opacity: .88 !important; }
-
-/* Download button */
-.stDownloadButton > button {
-    background: #0a2e1a !important; color: #4ade80 !important;
-    border: 1px solid #166534 !important; border-radius: 9px !important;
-    font-weight: 700 !important; width: 100% !important;
-}
-
-/* Dataframe */
-[data-testid="stDataFrame"] { border: 1px solid #1e3a5f !important; border-radius: 8px !important; }
-
-/* Progress */
-.stProgress > div > div { background: linear-gradient(90deg, #0057b8, #00aaff) !important; }
-
-/* Info / warning */
-.stAlert { border-radius: 8px !important; }
-
-/* Company list */
-.company-item {
-    padding: 5px 12px; background: #111827; border-left: 3px solid #0057b8;
-    border-radius: 4px; margin-bottom: 4px; font-size: .85rem; color: #a0b0cc;
-}
-.company-num { color: #1e3a5f; font-size: .75rem; margin-right: 8px; }
+h1 { font-weight: 800 !important; }
+h1 span { color: #0080ff; }
 </style>
 """, unsafe_allow_html=True)
 
-# Logo + title
-st.markdown("<h1>SERP <span style='color:#0080ff'>Research</span></h1>", unsafe_allow_html=True)
-
+st.markdown("<h1>SERP <span>Research</span></h1>", unsafe_allow_html=True)
 st.divider()
 
 api_key = st.text_input("Serper API Key", type="password", placeholder="Enter your serper.dev API key")
@@ -101,14 +33,9 @@ if uploaded_file:
     uploaded_file.seek(0)
     if "Key" in df_preview.columns:
         domains = df_preview["Key"].dropna().tolist()
-        st.markdown(f"**{len(domains)} companies loaded**")
-        items_html = "".join(
-            f'<div class="company-item"><span class="company-num">{i}.</span>{d}</div>'
-            for i, d in enumerate(domains[:50], 1)
-        )
-        if len(domains) > 50:
-            items_html += f'<div class="company-item" style="color:#444">+{len(domains)-50} more</div>'
-        st.markdown(items_html, unsafe_allow_html=True)
+        st.caption(f"{len(domains)} companies loaded")
+        st.dataframe(pd.DataFrame({"#": range(1, len(domains)+1), "Domain": domains}),
+                     use_container_width=True, hide_index=True)
     else:
         st.error("CSV must contain a 'Key' column.")
 
@@ -132,7 +59,7 @@ if uploaded_file and api_key:
         st.error("CSV must contain a 'Key' column.")
     else:
         run_disabled = platform == "Custom..." and not active_prefix
-        if st.button("Run Lookup", disabled=run_disabled):
+        if st.button("Run Lookup", disabled=run_disabled, use_container_width=True):
             domains = df["Key"].dropna().tolist()
             total = len(domains)
             results = [None] * total
@@ -151,19 +78,19 @@ if uploaded_file and api_key:
                         json={"q": query, "location": "United States", "autocorrect": False},
                         timeout=15
                     )
-                    resp.raise_for_status()
                     data = resp.json()
-                    url = (data.get("organic") or [{}])[0].get("link", "")
-                    results[idx] = {"Status": "found" if url else "not_found", "Key": domain, "SERP_Query": query, "URL": url}
-                except requests.HTTPError as e:
-                    results[idx] = {"Status": f"error_{e.response.status_code}", "Key": domain, "SERP_Query": query, "URL": ""}
+                    if not resp.ok:
+                        status_label = data.get("message") or f"error_{resp.status_code}"
+                        results[idx] = {"Status": status_label, "Key": domain, "SERP_Query": query, "URL": ""}
+                    else:
+                        url = (data.get("organic") or [{}])[0].get("link", "")
+                        results[idx] = {"Status": "found" if url else "not_found", "Key": domain, "SERP_Query": query, "URL": url}
                 except Exception as e:
-                    results[idx] = {"Status": "error", "Key": domain, "SERP_Query": query, "URL": str(e)}
+                    results[idx] = {"Status": str(e), "Key": domain, "SERP_Query": query, "URL": ""}
 
                 with lock:
                     completed[0] += 1
-                    pct = completed[0] / total
-                    progress_bar.progress(pct)
+                    progress_bar.progress(completed[0] / total)
                     status_text.text(f"Processing {completed[0]}/{total}: {domain}")
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=WORKERS) as ex:
@@ -181,12 +108,14 @@ if uploaded_file and api_key:
             c2.metric("Not found", not_found)
             c3.metric("Errors", errors)
 
-            st.dataframe(result_df, use_container_width=True, height=min(400, 60 + len(result_df) * 35))
+            st.dataframe(result_df, use_container_width=True,
+                         height=min(500, 60 + len(result_df) * 35))
 
             buf = io.StringIO()
             result_df.to_csv(buf, index=False)
             st.download_button("Download Result CSV", data=buf.getvalue(),
-                               file_name="serp_results.csv", mime="text/csv")
+                               file_name="serp_results.csv", mime="text/csv",
+                               use_container_width=True)
 
 elif uploaded_file and not api_key:
     st.warning("Please enter your Serper API key.")
