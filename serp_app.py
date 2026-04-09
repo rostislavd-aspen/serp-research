@@ -17,6 +17,7 @@ st.set_page_config(page_title="SERP Research", page_icon="🔍", layout="centere
 st.markdown("""
 <style>
 h1 { font-weight: 800 !important; }
+h1 { color: #ffffff !important; }
 h1 span { color: #0080ff; }
 </style>
 """, unsafe_allow_html=True)
@@ -34,8 +35,11 @@ if uploaded_file:
     if "Key" in df_preview.columns:
         domains = df_preview["Key"].dropna().tolist()
         st.caption(f"{len(domains)} companies loaded")
-        st.dataframe(pd.DataFrame({"#": range(1, len(domains)+1), "Domain": domains}),
-                     use_container_width=True, hide_index=True)
+        st.dataframe(
+            pd.DataFrame({"#": range(1, len(domains)+1), "Domain": domains}),
+            use_container_width=True, hide_index=True,
+            column_config={"#": st.column_config.NumberColumn(width="small"), "Domain": st.column_config.TextColumn(width="large")}
+        )
     else:
         st.error("CSV must contain a 'Key' column.")
 
@@ -80,7 +84,8 @@ if uploaded_file and api_key:
                     )
                     data = resp.json()
                     if not resp.ok:
-                        status_label = data.get("message") or f"error_{resp.status_code}"
+                        message = data.get("message", "Unknown error")
+                        status_label = f"{resp.status_code} — {message}"
                         results[idx] = {"Status": status_label, "Key": domain, "SERP_Query": query, "URL": ""}
                     else:
                         url = (data.get("organic") or [{}])[0].get("link", "")
