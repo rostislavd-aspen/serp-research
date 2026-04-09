@@ -87,11 +87,7 @@ input:focus { border-color: #0080ff !important; box-shadow: 0 0 0 2px rgba(0,128
 """, unsafe_allow_html=True)
 
 # Logo + title
-col1, col2 = st.columns([1, 6])
-with col1:
-    st.image("https://cdn.brandfetch.io/idVfYwCqBm/w/400/h/400/theme/dark/logo.png", width=48)
-with col2:
-    st.markdown("<h1 style='margin-top:4px'>SERP Research</h1>", unsafe_allow_html=True)
+st.markdown("<h1>SERP <span style='color:#0080ff'>Research</span></h1>", unsafe_allow_html=True)
 
 st.divider()
 
@@ -140,7 +136,7 @@ if uploaded_file and api_key:
             total = len(domains)
             results = [None] * total
             lock = threading.Lock()
-            completed = threading.Value('i', 0)
+            completed = [0]
 
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -164,10 +160,10 @@ if uploaded_file and api_key:
                     results[idx] = {"Status": "error", "Key": domain, "SERP_Query": query, "URL": str(e)}
 
                 with lock:
-                    completed.value += 1
-                    pct = completed.value / total
+                    completed[0] += 1
+                    pct = completed[0] / total
                     progress_bar.progress(pct)
-                    status_text.text(f"Processing {completed.value}/{total}: {domain}")
+                    status_text.text(f"Processing {completed[0]}/{total}: {domain}")
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=WORKERS) as ex:
                 ex.map(lambda x: lookup(*x), enumerate(domains))
